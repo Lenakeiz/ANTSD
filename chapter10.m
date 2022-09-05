@@ -102,10 +102,15 @@ legend({'original timeseries';'unscaled convolution';'manual wavelet convolution
 % creating a gaussian of 100 points
 close all;
 gaussFunc = @(x,mu,sig,height,vo) height*exp(-(((x-mu).^2)/(2*sig.^2)))+vo; %https://en.wikipedia.org/wiki/Gaussian_function
-x = [1:1:15];
-gaussKernel = gaussFunc(x,round(length(x)/2),1,1,0);
+expFunc = @(x,rate) (1-exp(x/10))/exp(max(x)/rate) + 1;
+x = [1:1:9];
+gaussKernel = gaussFunc(x,round(length(x)/2),1.8,-1,1);
+expKernel = expFunc(x,23);
+
 figure;
-plot(x,y);
+hold on;
+plot(x,gaussKernel);
+plot(x,expKernel);
 %% convolving previously created kernels with single channels from the sample data; using 50 datapoints
 load sampleEEGdata.mat;
 close all;
@@ -121,20 +126,31 @@ channelIndex = strcmpi(channelLabel,{EEG.chanlocs.labels});
 
 % convolving with the function
 data = squeeze(EEG.data(channelIndex,indices,trialId));
-gauss_conv_result = conv(data,gaussKernel,'same');
-
+gauss_conv_result = conv(data,gaussKernel,"same");
+exp_conv_result   = conv(data,expKernel, "same");
 % plot the signal (impulse or boxcar)
 subplot(311)
-plot(data)
+plot([1:1:50],data);
+set(gca,"xlim",[0 50]);
+legend(["Data"]);
 
 % plot the kernel
 subplot(312)
-plot(gaussKernel,'.-')
-set(gca,'xlim',[0 50],'ylim',[-1 1])
+hold on
+plot(gaussKernel,".-");
+plot(expKernel,".-");
+set(gca,"xlim",[1 9],"ylim",[0 1]);
+legend(["Gauss", "Exp"]);
+hold off
 
 % plot the result of convolution
 subplot(313)
-plot(gauss_conv_result)
-set(gca,'xlim',[0 50])
+hold on
+plot(data);
+plot(gauss_conv_result);
+plot(exp_conv_result);
+set(gca,"xlim",[0 50]);
+legend(["Data", "GaussConv", "ExpConv"]);
+hold off
 
 
